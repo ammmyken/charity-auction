@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>❤️ 部門愛心義賣競標</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f1f5f9;
+    color: #1e293b;
+    margin: 0;
+    padding: 16px;
+  }
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .header h2 { margin: 0 0 4px 0; font-size: 22px; color: #0f172a; }
+  .conn-dot { font-size: 12px; color: #16a34a; font-weight: bold; }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .status-banner {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .banner-live { background: #fee2e2; color: #dc2626; }
+  .banner-sold { background: #dcfce7; color: #15803d; }
+
+  .item-title { font-size: 22px; font-weight: 800; margin: 4px 0; color: #0f172a; }
+  .item-desc { font-size: 14px; color: #64748b; margin-bottom: 12px; }
+
+  .price-box {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .price-label { font-size: 13px; color: #64748b; font-weight: bold; }
+  .price-value { font-size: 36px; font-weight: 900; color: #dc2626; margin: 4px 0; }
+  .leader-info { font-size: 14px; color: #334155; font-weight: bold; }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-around;
+    font-size: 13px;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; color: #334155; }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+  }
+  input:focus { border-color: #2563eb; outline: none; }
+
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .btn-bid {
+    padding: 14px 8px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.25);
+    transition: transform 0.1s;
+  }
+  .btn-bid:active { transform: scale(0.97); }
+  .btn-bid:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+
+  .btn-buyout {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 900;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    margin-bottom: 12px;
+    box-shadow: 0 3px 8px rgba(234,88,12,0.3);
+  }
+  .btn-buyout:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+
+  .custom-row {
+    display: flex;
+    gap: 8px;
+  }
+  .custom-row input { margin-bottom: 0; flex: 1; }
+  .custom-row button {
+    padding: 0 18px;
+    border: none;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #fff;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .custom-row button:disabled { background: #cbd5e1; color: #64748b; }
+
+  .history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+  }
+  .history-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+  }
+  .history-list li:last-child { border-bottom: none; }
+  .waiting-screen {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>❤️ 部門愛心義賣競標</h2>
+    <div id="conn-status" class="conn-dot">⏳ 連線中...</div>
+  </div>
+
+  <!-- 你的大名 -->
+  <div class="card">
+    <label for="bidder-name">👤 你的姓名 / 暱稱（方便得標對帳）</label>
+    <input type="text" id="bidder-name" placeholder="請輸入姓名或分機，例如：小美 #123" oninput="saveName()">
+  </div>
+
+  <!-- 主競標區 -->
+  <div id="auction-area">
+    <div class="card waiting-screen">
+      <h3>⏳ 等待主持人開啟競標商品...</h3>
+      <p>商品切換後畫面會自動更新，不用重新整理！</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, onValue, runTransaction, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA0KOm-4NaSX29Fr_O4ToTvaWqO3B6Gqh8",
+    authDomain: "dept-charity-auction.firebaseapp.com",
+    databaseURL: "https://dept-charity-auction-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dept-charity-auction",
+    storageBucket: "dept-charity-auction.firebasestorage.app",
+    messagingSenderId: "487879822103",
+    appId: "1:487879822103:web:6cfc3228b4114a27c84552"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let activeItemId = null;
+  let currentItem = null;
+  let itemUnsubscribe = null;
+
+  const savedName = localStorage.getItem('charity_bidder_name');
+  if (savedName) document.getElementById('bidder-name').value = savedName;
+
+  window.saveName = function() {
+    localStorage.setItem('charity_bidder_name', document.getElementById('bidder-name').value);
+  };
+
+  onValue(ref(db, '.info/connected'), (snap) => {
+    const el = document.getElementById('conn-status');
+    if (snap.val() === true) {
+      el.innerText = '🟢 即時同步連線中';
+      el.style.color = '#16a34a';
+    } else {
+      el.innerText = '🔴 網路不穩，重新連線中...';
+      el.style.color = '#dc2626';
+    }
+  });
+
+  onValue(ref(db, 'auction/activeItemId'), (snap) => {
+    const newId = snap.val();
+    if (newId === activeItemId) return;
+    activeItemId = newId;
+
+    if (itemUnsubscribe) {
+      itemUnsubscribe();
+      itemUnsubscribe = null;
+    }
+
+    if (!activeItemId) {
+      currentItem = null;
+      renderWaiting();
+      return;
+    }
+
+    itemUnsubscribe = onValue(ref(db, `auction/items/${activeItemId}`), (itemSnap) => {
+      currentItem = itemSnap.val();
+      if (!currentItem) {
+        renderWaiting();
+      } else {
+        renderAuction(currentItem);
+      }
+    });
+  });
+
+  function renderWaiting() {
+    document.getElementById('auction-area').innerHTML = `
+      <div class="card waiting-screen">
+        <h3>⏳ 等待主持人開啟下一樣商品...</h3>
+        <p>商品開始競標時畫面會自動跳出！</p>
+      </div>
+    `;
+  }
+
+  function renderAuction(item) {
+    const isSold = item.status === 'sold';
+    const hasBid = item.currentPrice > 0;
+    const basePrice = hasBid ? item.currentPrice : item.startPrice;
+
+    const p20 = hasBid ? basePrice + 20 : item.startPrice;
+    const p30 = hasBid ? basePrice + 30 : item.startPrice + 30;
+    const p50 = hasBid ? basePrice + 50 : item.startPrice + 50;
+
+    const label20 = hasBid ? `+$20<br><small>($${p20})</small>` : `出底價<br><small>($${p20})</small>`;
+    const label30 = hasBid ? `+$30<br><small>($${p30})</small>` : `+$30<br><small>($${p30})</small>`;
+    const label50 = hasBid ? `+$50<br><small>($${p50})</small>` : `+$50<br><small>($${p50})</small>`;
+
+    const buyoutHtml = item.buyoutPrice
+      ? `<button class="btn-buyout" ${isSold ? 'disabled' : ''} onclick="submitBid(${item.buyoutPrice}, true)">
+           ⚡ 一口價直接帶走 $${item.buyoutPrice}
+         </button>`
+      : '';
+
+    let historyHtml = '<p style="color:#94a3b8; font-size:13px; text-align:center;">目前還沒有人出價，搶頭香就是你！</p>';
+    if (item.bids) {
+      const list = Object.values(item.bids).sort((a, b) => b.time - a.time).slice(0, 8);
+      historyHtml = `<ul class="history-list">` +
+        list.map((b, i) => `
+          <li>
+            <span>${i === 0 ? '👑 ' : ''}${escapeHtml(b.bidder)} ${b.isBuyout ? '<strong style="color:#ea580c;">[一口價]</strong>' : ''}</span>
+            <strong>$${b.amount}</strong>
+          </li>
+        `).join('') +
+        `</ul>`;
+    }
+
+    document.getElementById('auction-area').innerHTML = `
+      <div class="card">
+        <span class="status-banner ${isSold ? 'banner-sold' : 'banner-live'}">
+          ${isSold ? '✅ 已結標成交' : '🔥 現場競標中'}
+        </span>
+        <div class="item-title">${escapeHtml(item.name)}</div>
+        ${item.desc ? `<div class="item-desc">${escapeHtml(item.desc)}</div>` : ''}
+
+        <div class="price-box">
+          <div class="price-label">${hasBid ? '目前最高出價' : '起標底價'}</div>
+          <div class="price-value">$${hasBid ? item.currentPrice : item.startPrice}</div>
+          <div class="leader-info">
+            ${hasBid ? `目前領先：${escapeHtml(item.highestBidder)}` : '尚未有人出價'}
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span>起標價：$${item.startPrice}</span>
+          <span>一口價：${item.buyoutPrice ? '$' + item.buyoutPrice : '無'}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <label>💰 快速出價（點擊立即送出）</label>
+        <div class="quick-grid">
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p20}, false)">${label20}</button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p30}, false)">${label30}</button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p50}, false)">${label50}</button>
+        </div>
+
+        ${buyoutHtml}
+
+        <label>✍️ 或自訂金額出價</label>
+        <div class="custom-row">
+          <input type="number" id="custom-amount" placeholder="輸入高於目前價格的金額" ${isSold ? 'disabled' : ''}>
+          <button ${isSold ? 'disabled' : ''} onclick="submitCustomBid()">出價</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label>📜 最新出價紀錄</label>
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  window.submitCustomBid = function() {
+    const val = parseInt(document.getElementById('custom-amount').value, 10);
+    if (isNaN(val) || val <= 0) {
+      alert('請輸入有效的出價金額！');
+      return;
+    }
+    submitBid(val, false);
+  };
+
+  window.submitBid = async function(amount, isBuyoutClick) {
+    const bidder = document.getElementById('bidder-name').value.trim();
+    if (!bidder) {
+      alert('請先在最上方輸入你的姓名或暱稱喔！');
+      document.getElementById('bidder-name').focus();
+      return;
+    }
+    if (!activeItemId || !currentItem) return;
+
+    const confirmMsg = isBuyoutClick
+      ? `確定要以一口價 $${amount} 直接得標「${currentItem.name}」嗎？`
+      : `確定要出價 $${amount} 競標「${currentItem.name}」嗎？`;
+    if (!confirm(confirmMsg)) return;
+
+    const itemRef = ref(db, `auction/items/${activeItemId}`);
+    let errorReason = '';
+
+    try {
+      const result = await runTransaction(itemRef, (item) => {
+        if (!item) return item;
+        if (item.status === 'sold') {
+          errorReason = '手慢了一步，此商品剛剛已經結標囉！';
+          return;
+        }
+
+        const minRequired = item.currentPrice > 0 ? item.currentPrice + 1 : item.startPrice;
+        if (amount < minRequired) {
+          errorReason = `剛剛已經有人出到 $${item.currentPrice || item.startPrice} 囉！請重新出更高價。`;
+          return;
+        }
+
+        let finalAmount = amount;
+        if (item.buyoutPrice && amount >= item.buyoutPrice) {
+          finalAmount = item.buyoutPrice;
+          item.status = 'sold';
+        }
+
+        item.currentPrice = finalAmount;
+        item.highestBidder = bidder;
+        return item;
+      });
+
+      if (!result.committed) {
+        alert(errorReason || '出價未成功，可能剛好有人同時出價，請再試一次！');
+        return;
+      }
+
+      const finalData = result.snapshot.val();
+      await push(ref(db, `auction/items/${activeItemId}/bids`), {
+        bidder,
+        amount: finalData.currentPrice,
+        isBuyout: finalData.status === 'sold' && Boolean(finalData.buyoutPrice && finalData.currentPrice >= finalData.buyoutPrice),
+        time: Date.now()
+      });
+
+      const customInput = document.getElementById('custom-amount');
+      if (customInput) customInput.value = '';
+
+    } catch (e) {
+      alert('連線發生錯誤，請檢查網路後再試一次：' + e.message);
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+</script>
+</body>
+</html>
