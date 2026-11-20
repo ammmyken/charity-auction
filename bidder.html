@@ -5,10 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>❤️ 部門愛心義賣競標</title>
 <style>
+  :root {
+    --rose-primary: #D15B70;
+    --rose-light: #FFE3E7;
+    --rose-lighter: #FFF5F6;
+    --rose-text-dark: #4A3236;
+    --rose-text-muted: #7C6A6D;
+    --rose-btn-quick: #E07B8D;
+    --rose-btn-buyout: #3D272A;
+    --rose-text-buyout: #FFB3C1;
+    --rose-border: #E8D4D7;
+  }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f1f5f9;
-    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+    background-color: var(--rose-lighter);
+    color: var(--rose-text-dark);
     margin: 0;
     padding: 16px;
   }
@@ -20,80 +31,93 @@
     text-align: center;
     margin-bottom: 14px;
   }
-  .header h2 { margin: 0 0 4px 0; font-size: 22px; color: #0f172a; }
-  .conn-dot { font-size: 12px; color: #16a34a; font-weight: bold; }
+  .header h2 {
+    margin: 0 0 6px 0;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--rose-text-dark);
+  }
+  .conn-dot { font-size: 12px; color: var(--rose-primary); font-weight: 700; }
 
   .card {
-    background: #fff;
-    border-radius: 14px;
+    background: #ffffff;
+    border-radius: 16px;
     padding: 18px;
     margin-bottom: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border: 1px solid var(--rose-border);
+    box-shadow: 0 4px 14px rgba(209, 91, 112, 0.06);
   }
   .status-banner {
     display: inline-block;
     padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: bold;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
     margin-bottom: 8px;
   }
-  .banner-live { background: #fee2e2; color: #dc2626; }
-  .banner-sold { background: #dcfce7; color: #15803d; }
+  .banner-live { background: var(--rose-light); color: var(--rose-primary); border: 1px solid var(--rose-border); }
+  .banner-sold { background: var(--rose-btn-buyout); color: var(--rose-text-buyout); }
 
-  .item-title { font-size: 22px; font-weight: 800; margin: 4px 0; color: #0f172a; }
-  .item-desc { font-size: 14px; color: #64748b; margin-bottom: 12px; }
+  .item-title { font-size: 22px; font-weight: 800; margin: 4px 0; color: var(--rose-text-dark); }
+  .item-desc { font-size: 14px; color: var(--rose-text-muted); margin-bottom: 12px; }
 
   .price-box {
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px;
+    background: var(--rose-lighter);
+    border: 1.5px solid var(--rose-border);
+    border-radius: 14px;
+    padding: 16px;
     text-align: center;
     margin-bottom: 12px;
   }
-  .price-label { font-size: 13px; color: #64748b; font-weight: bold; }
-  .price-value { font-size: 36px; font-weight: 900; color: #dc2626; margin: 4px 0; }
-  .leader-info { font-size: 14px; color: #334155; font-weight: bold; }
+  .price-label { font-size: 13px; color: var(--rose-primary); font-weight: 700; }
+  .price-value { font-size: 38px; font-weight: 900; color: var(--rose-primary); margin: 4px 0; letter-spacing: -0.5px; }
+  .leader-info { font-size: 14px; color: var(--rose-text-dark); font-weight: 700; }
 
   .meta-row {
     display: flex;
     justify-content: space-around;
     font-size: 13px;
-    color: #475569;
-    background: #f1f5f9;
-    padding: 8px;
-    border-radius: 8px;
+    color: var(--rose-text-muted);
+    background: var(--rose-lighter);
+    padding: 9px;
+    border-radius: 10px;
+    font-weight: 600;
   }
 
-  label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; color: #334155; }
+  label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--rose-text-dark); }
   input[type="text"], input[type="number"] {
     width: 100%;
     padding: 12px;
     font-size: 16px;
-    border: 2px solid #cbd5e1;
+    border: 1.5px solid var(--rose-border);
     border-radius: 10px;
     box-sizing: border-box;
     margin-bottom: 12px;
+    background: #FFFFFF;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  input:focus { border-color: #2563eb; outline: none; }
+  input:focus {
+    border-color: var(--rose-primary);
+    box-shadow: 0 0 0 3px rgba(209, 91, 112, 0.14);
+    background: #fff;
+    outline: none;
+  }
 
   .btn-base {
     width: 100%;
     padding: 13px 10px;
-    border: none;
-    border-radius: 10px;
+    border: 1.5px solid var(--rose-btn-quick);
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 800;
     cursor: pointer;
-    background: #0284c7;
-    color: #fff;
+    background: var(--rose-lighter);
+    color: var(--rose-primary);
     margin-bottom: 8px;
-    box-shadow: 0 2px 6px rgba(2,132,199,0.25);
-    transition: transform 0.1s;
+    transition: transform 0.1s, background 0.15s;
   }
-  .btn-base:active { transform: scale(0.98); }
-  .btn-base:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+  .btn-base:active { transform: scale(0.98); background: var(--rose-light); }
+  .btn-base:disabled { background: #F5F0F1; border-color: #E0D0D3; color: #A8989B; cursor: not-allowed; }
 
   .quick-grid {
     display: grid;
@@ -104,32 +128,34 @@
   .btn-bid {
     padding: 13px 8px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 800;
     cursor: pointer;
-    background: #2563eb;
+    background: var(--rose-btn-quick);
     color: #fff;
-    box-shadow: 0 2px 6px rgba(37,99,235,0.25);
-    transition: transform 0.1s;
+    box-shadow: 0 3px 8px rgba(209, 91, 112, 0.24);
+    transition: transform 0.1s, opacity 0.15s;
   }
   .btn-bid:active { transform: scale(0.97); }
-  .btn-bid:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+  .btn-bid:disabled { background: #D0C0C3; color: #fff; box-shadow: none; cursor: not-allowed; }
 
   .btn-buyout {
     width: 100%;
     padding: 14px;
     border: none;
-    border-radius: 10px;
-    font-size: 17px;
-    font-weight: 900;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
     cursor: pointer;
-    background: linear-gradient(135deg, #f59e0b, #ea580c);
-    color: #fff;
+    background: var(--rose-btn-buyout);
+    color: var(--rose-text-buyout);
     margin-bottom: 12px;
-    box-shadow: 0 3px 8px rgba(234,88,12,0.3);
+    box-shadow: 0 4px 10px rgba(61, 39, 42, 0.2);
+    transition: transform 0.1s;
   }
-  .btn-buyout:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+  .btn-buyout:active { transform: scale(0.98); }
+  .btn-buyout:disabled { background: #D0C0C3; color: #fff; border: none; box-shadow: none; cursor: not-allowed; }
 
   .custom-row {
     display: flex;
@@ -137,16 +163,16 @@
   }
   .custom-row input { margin-bottom: 0; flex: 1; }
   .custom-row button {
-    padding: 0 18px;
+    padding: 0 20px;
     border: none;
     border-radius: 10px;
-    background: #0f172a;
+    background: var(--rose-text-dark);
     color: #fff;
-    font-weight: bold;
+    font-weight: 800;
     font-size: 15px;
     cursor: pointer;
   }
-  .custom-row button:disabled { background: #cbd5e1; color: #64748b; }
+  .custom-row button:disabled { background: #D0C0C3; color: #fff; }
 
   .history-list {
     list-style: none;
@@ -155,8 +181,8 @@
     font-size: 14px;
   }
   .history-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rose-border);
     display: flex;
     justify-content: space-between;
   }
@@ -164,7 +190,7 @@
   .waiting-screen {
     text-align: center;
     padding: 40px 20px;
-    color: #64748b;
+    color: var(--rose-text-muted);
   }
 </style>
 </head>
@@ -223,7 +249,7 @@
     const el = document.getElementById('conn-status');
     if (snap.val() === true) {
       el.innerText = '🟢 即時同步連線中';
-      el.style.color = '#16a34a';
+      el.style.color = '#D15B70';
     } else {
       el.innerText = '🔴 網路不穩，重新連線中...';
       el.style.color = '#dc2626';
@@ -287,14 +313,14 @@
          </button>`
       : '';
 
-    let historyHtml = '<p style="color:#94a3b8; font-size:13px; text-align:center;">目前還沒有人出價，搶頭香就是你！</p>';
+    let historyHtml = '<p style="color:#A8989B; font-size:13px; text-align:center;">目前還沒有人出價，搶頭香就是你！</p>';
     if (item.bids) {
       const list = Object.values(item.bids).sort((a, b) => b.time - a.time).slice(0, 8);
       historyHtml = `<ul class="history-list">` +
         list.map((b, i) => `
           <li>
-            <span>${i === 0 ? '👑 ' : ''}${escapeHtml(b.bidder)} ${b.isBuyout ? '<strong style="color:#ea580c;">[一口價]</strong>' : ''}</span>
-            <strong>$${b.amount}</strong>
+            <span>${i === 0 ? '👑 ' : ''}${escapeHtml(b.bidder)} ${b.isBuyout ? '<strong style="color:#D15B70;">[一口價]</strong>' : ''}</span>
+            <strong style="color:#D15B70;">$${b.amount}</strong>
           </li>
         `).join('') +
         `</ul>`;
