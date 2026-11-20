@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎤 義賣主持人後台</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+    margin: 0 auto;
+    padding: 16px;
+    max-width: 900px;
+  }
+  h2, h3 { margin-top: 0; color: #1e293b; }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .form-group { display: flex; flex-direction: column; }
+  label { font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #475569; }
+  input {
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 13px;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-warning { background: #d97706; color: #fff; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-secondary { background: #64748b; color: #fff; }
+
+  .item-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #fff;
+    transition: all 0.2s;
+  }
+  .item-card.active-item {
+    border-color: #2563eb;
+    background: #eff6ff;
+  }
+  .item-card.sold-item {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    opacity: 0.92;
+  }
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .badge-active { background: #2563eb; color: #fff; }
+  .badge-waiting { background: #e2e8f0; color: #475569; }
+  .badge-sold { background: #16a34a; color: #fff; }
+
+  .price-info {
+    font-size: 14px;
+    color: #334155;
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+  .current-high {
+    font-size: 18px;
+    font-weight: bold;
+    color: #dc2626;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .history-box {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #cbd5e1;
+    font-size: 13px;
+    color: #475569;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+  .status-bar {
+    font-size: 13px;
+    color: #16a34a;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <h2>🎤 部門愛心義賣 — 主持人後台</h2>
+  <div id="conn-status" class="status-bar">⏳ 連線至即時資料庫中...</div>
+
+  <!-- 新增義賣商品 -->
+  <div class="card">
+    <h3>➕ 新增義賣商品</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>商品名稱 *</label>
+        <input id="item-name" placeholder="例如：星巴克限量保溫杯">
+      </div>
+      <div class="form-group">
+        <label>起標底價 ($) *</label>
+        <input id="start-price" type="number" value="100" min="0">
+      </div>
+      <div class="form-group">
+        <label>一口價 ($，選填)</label>
+        <input id="buyout-price" type="number" placeholder="不設可留空" min="0">
+      </div>
+      <div class="form-group">
+        <label>補充說明 (選填)</label>
+        <input id="item-desc" placeholder="例如：全新未拆、捐贈人小王">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addItem()">新增至清單</button>
+  </div>
+
+  <!-- 商品管理與切換區 -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+      <h3 style="margin:0;">📦 義賣商品清單（點擊切換現場競標）</h3>
+      <button class="btn btn-secondary" onclick="clearActiveItem()">⏸️ 暫停展示（無進行中商品）</button>
+    </div>
+    <div id="items-container">載入中...</div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA0KOm-4NaSX29Fr_O4ToTvaWqO3B6Gqh8",
+    authDomain: "dept-charity-auction.firebaseapp.com",
+    databaseURL: "https://dept-charity-auction-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dept-charity-auction",
+    storageBucket: "dept-charity-auction.firebasestorage.app",
+    messagingSenderId: "487879822103",
+    appId: "1:487879822103:web:6cfc3228b4114a27c84552"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let currentActiveId = null;
+  let allItems = {};
+
+  onValue(ref(db, '.info/connected'), (snap) => {
+    const el = document.getElementById('conn-status');
+    if (snap.val() === true) {
+      el.innerText = '🟢 已連線至即時同步伺服器';
+      el.style.color = '#16a34a';
+    } else {
+      el.innerText = '🔴 連線中斷，嘗試重新連線中...';
+      el.style.color = '#dc2626';
+    }
+  });
+
+  onValue(ref(db, 'auction/activeItemId'), (snap) => {
+    currentActiveId = snap.val();
+    renderItems();
+  });
+
+  onValue(ref(db, 'auction/items'), (snap) => {
+    allItems = snap.val() || {};
+    renderItems();
+  });
+
+  window.addItem = function() {
+    const name = document.getElementById('item-name').value.trim();
+    const startPrice = parseInt(document.getElementById('start-price').value, 10);
+    const buyoutRaw = document.getElementById('buyout-price').value.trim();
+    const buyoutPrice = buyoutRaw ? parseInt(buyoutRaw, 10) : null;
+    const desc = document.getElementById('item-desc').value.trim();
+
+    if (!name || isNaN(startPrice) || startPrice < 0) {
+      alert('請輸入正確的商品名稱與起標底價！');
+      return;
+    }
+    if (buyoutPrice !== null && buyoutPrice <= startPrice) {
+      alert('一口價必須大於起標底價！');
+      return;
+    }
+
+    const newItemRef = push(ref(db, 'auction/items'));
+    set(newItemRef, {
+      name,
+      desc,
+      startPrice,
+      buyoutPrice,
+      currentPrice: 0,
+      highestBidder: '',
+      status: 'open',
+      createdAt: Date.now()
+    });
+
+    document.getElementById('item-name').value = '';
+    document.getElementById('buyout-price').value = '';
+    document.getElementById('item-desc').value = '';
+  };
+
+  window.setActiveItem = function(itemId) {
+    set(ref(db, 'auction/activeItemId'), itemId);
+  };
+
+  window.clearActiveItem = function() {
+    set(ref(db, 'auction/activeItemId'), null);
+  };
+
+  window.closeItem = function(itemId) {
+    if (!confirm('確定要將此商品設為「已結標」嗎？')) return;
+    update(ref(db, `auction/items/${itemId}`), { status: 'sold' });
+  };
+
+  window.reopenItem = function(itemId) {
+    if (!confirm('確定要重新開放此商品競標嗎？')) return;
+    update(ref(db, `auction/items/${itemId}`), { status: 'open' });
+  };
+
+  window.resetBids = function(itemId) {
+    if (!confirm('確定要清空此商品的所有出價紀錄並恢復起標狀態嗎？')) return;
+    update(ref(db, `auction/items/${itemId}`), {
+      currentPrice: 0,
+      highestBidder: '',
+      status: 'open',
+      bids: null
+    });
+  };
+
+  window.deleteItem = function(itemId) {
+    if (!confirm('確定要永久刪除此商品嗎？')) return;
+    if (currentActiveId === itemId) {
+      set(ref(db, 'auction/activeItemId'), null);
+    }
+    remove(ref(db, `auction/items/${itemId}`));
+  };
+
+  function renderItems() {
+    const container = document.getElementById('items-container');
+    const keys = Object.keys(allItems);
+
+    if (keys.length === 0) {
+      container.innerHTML = '<p style="color:#64748b;">目前尚未新增任何義賣商品。</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    keys.forEach((id, idx) => {
+      const item = allItems[id];
+      const isActive = (id === currentActiveId);
+      const isSold = (item.status === 'sold');
+
+      let badgeHtml = `<span class="badge badge-waiting">待拍賣</span>`;
+      if (isActive && !isSold) badgeHtml = `<span class="badge badge-active">🔥 現場競標中</span>`;
+      if (isSold) badgeHtml = `<span class="badge badge-sold">✅ 已結標</span>`;
+
+      const displayPrice = item.currentPrice > 0 ? `$${item.currentPrice}` : `尚未出價（底價 $${item.startPrice}）`;
+      const winnerText = item.highestBidder ? `｜最高出價者：<strong>${escapeHtml(item.highestBidder)}</strong>` : '';
+      const buyoutText = item.buyoutPrice ? `｜一口價：<strong>$${item.buyoutPrice}</strong>` : '';
+
+      let bidsHtml = '';
+      if (item.bids) {
+        const bidList = Object.values(item.bids).sort((a, b) => b.time - a.time);
+        bidsHtml = `<div class="history-box"><strong>出價紀錄（共 ${bidList.length} 筆）：</strong><br>` +
+          bidList.map(b => `• ${escapeHtml(b.bidder)} 出價 $${b.amount} ${b.isBuyout ? '(一口價!)' : ''}`).join('<br>') +
+          `</div>`;
+      }
+
+      const card = document.createElement('div');
+      card.className = `item-card ${isActive ? 'active-item' : ''} ${isSold ? 'sold-item' : ''}`;
+      card.innerHTML = `
+        <div class="item-header">
+          <div>
+            <strong style="font-size:16px;">#${idx + 1} ${escapeHtml(item.name)}</strong>
+            ${item.desc ? `<span style="color:#64748b; font-size:13px;">（${escapeHtml(item.desc)}）</span>` : ''}
+          </div>
+          ${badgeHtml}
+        </div>
+        <div class="price-info">
+          底價：$${item.startPrice}${buyoutText}<br>
+          目前狀態：<span class="current-high">${displayPrice}</span>${winnerText}
+        </div>
+        <div class="actions">
+          ${!isActive ? `<button class="btn btn-primary" onclick="setActiveItem('${id}')">📢 切換為現場競標</button>` : `<button class="btn btn-secondary" disabled>目前畫面展示中</button>`}
+          ${!isSold ? `<button class="btn btn-success" onclick="closeItem('${id}')">🔨 立即結標</button>` : `<button class="btn btn-warning" onclick="reopenItem('${id}')">🔄 重新開放</button>`}
+          <button class="btn btn-warning" onclick="resetBids('${id}')">🧹 清空出價</button>
+          <button class="btn btn-danger" onclick="deleteItem('${id}')">🗑️ 刪除</button>
+        </div>
+        ${bidsHtml}
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+</script>
+</body>
+</html>
