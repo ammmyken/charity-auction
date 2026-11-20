@@ -395,7 +395,9 @@
           目前狀態：<span class="current-high">${displayPrice}</span>${winnerText}
         </div>
         <div class="actions">
-          ${!isActive ? `<button class="btn btn-primary" onclick="setActiveItem('${id}')">📢 切換為現場競標</button>` : `<button class="btn btn-secondary" disabled>目前畫面展示中</button>`}
+          ${!isActive
+            ? `<button class="btn btn-primary" onclick="setActiveItem('${id}')">📢 切換為現場競標</button>`
+            : `<button class="btn btn-danger" onclick="clearActiveItem()">⏹️ 取消展示</button>`}
           <button class="btn btn-info" onclick="startEditItem('${id}')">✏️ 編輯</button>
           ${!isSold ? `<button class="btn btn-success" onclick="closeItem('${id}')">🔨 立即結標</button>` : `<button class="btn btn-warning" onclick="reopenItem('${id}')">🔄 重新開放</button>`}
           <button class="btn btn-warning" onclick="resetBids('${id}')">🧹 清空出價</button>
