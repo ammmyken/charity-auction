@@ -78,14 +78,31 @@
   }
   input:focus { border-color: #2563eb; outline: none; }
 
+  .btn-base {
+    width: 100%;
+    padding: 13px 10px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    background: #0284c7;
+    color: #fff;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(2,132,199,0.25);
+    transition: transform 0.1s;
+  }
+  .btn-base:active { transform: scale(0.98); }
+  .btn-base:disabled { background: #cbd5e1; color: #64748b; box-shadow: none; cursor: not-allowed; }
+
   .quick-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     margin-bottom: 10px;
   }
   .btn-bid {
-    padding: 14px 8px;
+    padding: 13px 8px;
     border: none;
     border-radius: 10px;
     font-size: 16px;
@@ -253,13 +270,16 @@
     const hasBid = item.currentPrice > 0;
     const basePrice = hasBid ? item.currentPrice : item.startPrice;
 
-    const p20 = hasBid ? basePrice + 20 : item.startPrice;
-    const p30 = hasBid ? basePrice + 30 : item.startPrice + 30;
-    const p50 = hasBid ? basePrice + 50 : item.startPrice + 50;
+    const p10 = basePrice + 10;
+    const p20 = basePrice + 20;
+    const p30 = basePrice + 30;
+    const p50 = basePrice + 50;
 
-    const label20 = hasBid ? `+$20<br><small>($${p20})</small>` : `出底價<br><small>($${p20})</small>`;
-    const label30 = hasBid ? `+$30<br><small>($${p30})</small>` : `+$30<br><small>($${p30})</small>`;
-    const label50 = hasBid ? `+$50<br><small>($${p50})</small>` : `+$50<br><small>($${p50})</small>`;
+    const baseBtnHtml = !hasBid
+      ? `<button class="btn-base" ${isSold ? 'disabled' : ''} onclick="submitBid(${item.startPrice}, false)">
+           🏷️ 出底價 ($${item.startPrice})
+         </button>`
+      : '';
 
     const buyoutHtml = item.buyoutPrice
       ? `<button class="btn-buyout" ${isSold ? 'disabled' : ''} onclick="submitBid(${item.buyoutPrice}, true)">
@@ -304,10 +324,12 @@
 
       <div class="card">
         <label>💰 快速出價（點擊立即送出）</label>
+        ${baseBtnHtml}
         <div class="quick-grid">
-          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p20}, false)">${label20}</button>
-          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p30}, false)">${label30}</button>
-          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p50}, false)">${label50}</button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p10}, false)">+$10<br><small>($${p10})</small></button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p20}, false)">+$20<br><small>($${p20})</small></button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p30}, false)">+$30<br><small>($${p30})</small></button>
+          <button class="btn-bid" ${isSold ? 'disabled' : ''} onclick="submitBid(${p50}, false)">+$50<br><small>($${p50})</small></button>
         </div>
 
         ${buyoutHtml}
