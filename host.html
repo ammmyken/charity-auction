@@ -34,6 +34,7 @@
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     font-size: 14px;
+    box-sizing: border-box;
   }
   .btn {
     padding: 8px 14px;
@@ -50,6 +51,7 @@
   .btn-warning { background: #d97706; color: #fff; }
   .btn-danger { background: #dc2626; color: #fff; }
   .btn-secondary { background: #64748b; color: #fff; }
+  .btn-info { background: #0284c7; color: #fff; }
 
   .item-card {
     border: 2px solid #e2e8f0;
@@ -102,6 +104,13 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 10px;
+  }
+  .edit-box {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
   }
   .history-box {
     margin-top: 10px;
@@ -177,6 +186,7 @@
 
   let currentActiveId = null;
   let allItems = {};
+  let editingItemId = null;
 
   onValue(ref(db, '.info/connected'), (snap) => {
     const el = document.getElementById('conn-status');
@@ -210,7 +220,7 @@
       alert('請輸入正確的商品名稱與起標底價！');
       return;
     }
-    if (buyoutPrice !== null && buyoutPrice <= startPrice) {
+    if (buyoutPrice !== null && (isNaN(buyoutPrice) || buyoutPrice <= startPrice)) {
       alert('一口價必須大於起標底價！');
       return;
     }
@@ -230,6 +240,45 @@
     document.getElementById('item-name').value = '';
     document.getElementById('buyout-price').value = '';
     document.getElementById('item-desc').value = '';
+  };
+
+  window.startEditItem = function(itemId) {
+    editingItemId = (editingItemId === itemId) ? null : itemId;
+    renderItems();
+  };
+
+  window.saveEditItem = function(itemId) {
+    const item = allItems[itemId];
+    if (!item) return;
+
+    const name = document.getElementById(`edit-name-${itemId}`).value.trim();
+    const startPrice = parseInt(document.getElementById(`edit-start-${itemId}`).value, 10);
+    const buyoutRaw = document.getElementById(`edit-buyout-${itemId}`).value.trim();
+    const buyoutPrice = buyoutRaw ? parseInt(buyoutRaw, 10) : null;
+    const desc = document.getElementById(`edit-desc-${itemId}`).value.trim();
+
+    if (!name || isNaN(startPrice) || startPrice < 0) {
+      alert('請輸入正確的商品名稱與起標底價！');
+      return;
+    }
+    if (buyoutPrice !== null && (isNaN(buyoutPrice) || buyoutPrice <= startPrice)) {
+      alert('一口價必須大於起標底價！');
+      return;
+    }
+    if (buyoutPrice !== null && item.currentPrice > 0 && buyoutPrice <= item.currentPrice) {
+      alert(`目前最高出價已經是 $${item.currentPrice}，新設定的一口價必須高於目前最高價喔！`);
+      return;
+    }
+
+    update(ref(db, `auction/items/${itemId}`), {
+      name,
+      startPrice,
+      buyoutPrice,
+      desc
+    }).then(() => {
+      editingItemId = null;
+      renderItems();
+    });
   };
 
   window.setActiveItem = function(itemId) {
@@ -265,6 +314,9 @@
     if (currentActiveId === itemId) {
       set(ref(db, 'auction/activeItemId'), null);
     }
+    if (editingItemId === itemId) {
+      editingItemId = null;
+    }
     remove(ref(db, `auction/items/${itemId}`));
   };
 
@@ -282,6 +334,7 @@
       const item = allItems[id];
       const isActive = (id === currentActiveId);
       const isSold = (item.status === 'sold');
+      const isEditing = (id === editingItemId);
 
       let badgeHtml = `<span class="badge badge-waiting">待拍賣</span>`;
       if (isActive && !isSold) badgeHtml = `<span class="badge badge-active">🔥 現場競標中</span>`;
@@ -299,6 +352,34 @@
           `</div>`;
       }
 
+      const editBoxHtml = isEditing ? `
+        <div class="edit-box">
+          <strong style="display:block; margin-bottom:8px; color:#0f172a;">✏️ 編輯商品資料</strong>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>商品名稱 *</label>
+              <input id="edit-name-${id}" value="${escapeAttr(item.name)}">
+            </div>
+            <div class="form-group">
+              <label>起標底價 ($) *</label>
+              <input id="edit-start-${id}" type="number" value="${item.startPrice}" min="0">
+            </div>
+            <div class="form-group">
+              <label>一口價 ($，留空取消)</label>
+              <input id="edit-buyout-${id}" type="number" value="${item.buyoutPrice ?? ''}" placeholder="不設可留空" min="0">
+            </div>
+            <div class="form-group">
+              <label>補充說明</label>
+              <input id="edit-desc-${id}" value="${escapeAttr(item.desc || '')}">
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-success" onclick="saveEditItem('${id}')">💾 儲存修改</button>
+            <button class="btn btn-secondary" onclick="startEditItem('${id}')">取消</button>
+          </div>
+        </div>
+      ` : '';
+
       const card = document.createElement('div');
       card.className = `item-card ${isActive ? 'active-item' : ''} ${isSold ? 'sold-item' : ''}`;
       card.innerHTML = `
@@ -315,10 +396,12 @@
         </div>
         <div class="actions">
           ${!isActive ? `<button class="btn btn-primary" onclick="setActiveItem('${id}')">📢 切換為現場競標</button>` : `<button class="btn btn-secondary" disabled>目前畫面展示中</button>`}
+          <button class="btn btn-info" onclick="startEditItem('${id}')">✏️ 編輯</button>
           ${!isSold ? `<button class="btn btn-success" onclick="closeItem('${id}')">🔨 立即結標</button>` : `<button class="btn btn-warning" onclick="reopenItem('${id}')">🔄 重新開放</button>`}
           <button class="btn btn-warning" onclick="resetBids('${id}')">🧹 清空出價</button>
           <button class="btn btn-danger" onclick="deleteItem('${id}')">🗑️ 刪除</button>
         </div>
+        ${editBoxHtml}
         ${bidsHtml}
       `;
       container.appendChild(card);
@@ -328,6 +411,11 @@
   function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  function escapeAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/"/g, '&quot;');
   }
 </script>
 </body>
