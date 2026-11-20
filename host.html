@@ -79,6 +79,7 @@
   .btn-warning { background: var(--rose-light); color: var(--rose-primary); border: 1px solid var(--rose-border); }
   .btn-danger { background: var(--rose-warn-bg); color: var(--rose-warn-text); border: 1px solid var(--rose-warn-border); }
   .btn-secondary { background: var(--rose-lighter); color: var(--rose-text-muted); border: 1px solid var(--rose-border); }
+  .btn-passed { background: #F4ECEE; color: #6E585C; border: 1px solid #DEC8CD; }
 
   /* 收款／取貨狀態按鈕 */
   .btn-unpaid {
@@ -117,6 +118,55 @@
   .summary-label { font-size: 12px; color: var(--rose-text-muted); font-weight: 700; }
   .summary-val { font-size: 20px; font-weight: 900; color: var(--rose-primary); margin-top: 4px; }
 
+  .buyer-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--rose-border);
+  }
+  .buyer-section-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--rose-text-dark);
+    margin-bottom: 10px;
+  }
+  .buyer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .buyer-card {
+    background: #FFF9FA;
+    border: 1px solid var(--rose-border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .buyer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 800;
+    margin-bottom: 6px;
+    color: var(--rose-text-dark);
+  }
+  .buyer-total {
+    color: var(--rose-primary);
+    font-size: 15px;
+    font-weight: 900;
+  }
+  .buyer-items {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--rose-text-muted);
+    line-height: 1.6;
+  }
+  .buyer-status-note {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--rose-text-dark);
+  }
+
   .item-card {
     border: 1.5px solid var(--rose-border);
     border-radius: 12px;
@@ -134,6 +184,11 @@
     border-color: #D0C0C3;
     background: #FBF8F9;
     opacity: 0.96;
+  }
+  .item-card.passed-item {
+    border-color: #DEC8CD;
+    background: #FAF6F7;
+    opacity: 0.88;
   }
   .item-header {
     display: flex;
@@ -158,6 +213,7 @@
   .badge-active { background: var(--rose-primary); color: #fff; }
   .badge-waiting { background: var(--rose-lighter); color: var(--rose-text-muted); }
   .badge-sold { background: var(--rose-btn-buyout); color: var(--rose-text-buyout); }
+  .badge-passed { background: #E9DCE0; color: #6E585C; }
   .badge-unpaid { background: #FFE4E6; color: #BE123C; border: 1px solid #FECDD3; }
   .badge-paid { background: var(--paid-bg); color: var(--paid-text); border: 1px solid var(--paid-border); }
   .badge-unclaimed { background: var(--rose-lighter); color: var(--rose-text-muted); border: 1px solid var(--rose-border); }
@@ -221,6 +277,7 @@
   <div class="card">
     <h3>💰 收款與取貨對帳總覽</h3>
     <div id="settlement-summary" class="summary-grid"></div>
+    <div id="buyer-summary" class="buyer-section"></div>
   </div>
 
   <!-- 新增義賣商品 -->
@@ -299,27 +356,58 @@
     renderItems();
   });
 
+  function hasDealRecord(item) {
+    return item.status === 'sold' || item.currentPrice > 0;
+  }
+
   function renderSummary() {
     const summaryEl = document.getElementById('settlement-summary');
+    const buyerEl = document.getElementById('buyer-summary');
     const items = Object.values(allItems);
-    const soldItems = items.filter(i => i.status === 'sold' || i.currentPrice > 0);
+    const dealItems = items.filter(i => hasDealRecord(i));
 
     let paidAmount = 0;
     let unpaidAmount = 0;
     let unpaidCount = 0;
     let unclaimedCount = 0;
 
-    soldItems.forEach(item => {
+    const buyerMap = new Map();
+
+    dealItems.forEach(item => {
       const amount = item.currentPrice > 0 ? item.currentPrice : item.startPrice;
-      if (item.isPaid) {
+      const isPaid = Boolean(item.isPaid);
+      const isClaimed = Boolean(item.isClaimed);
+
+      if (isPaid) {
         paidAmount += amount;
       } else {
         unpaidAmount += amount;
         unpaidCount += 1;
       }
-      if (!item.isClaimed) {
+      if (!isClaimed) {
         unclaimedCount += 1;
       }
+
+      const buyerName = (item.highestBidder || '').trim() || '未填寫得標者';
+      if (!buyerMap.has(buyerName)) {
+        buyerMap.set(buyerName, {
+          name: buyerName,
+          totalAmount: 0,
+          items: [],
+          allPaid: true,
+          allClaimed: true
+        });
+      }
+      const entry = buyerMap.get(buyerName);
+      entry.totalAmount += amount;
+      entry.items.push({
+        name: item.name,
+        amount,
+        isPaid,
+        isClaimed
+      });
+      if (!isPaid) entry.allPaid = false;
+      if (!isClaimed) entry.allClaimed = false;
     });
 
     summaryEl.innerHTML = `
@@ -338,6 +426,35 @@
       <div class="summary-box">
         <div class="summary-label">尚未拿走筆數</div>
         <div class="summary-val">${unclaimedCount} 筆</div>
+      </div>
+    `;
+
+    const buyers = Array.from(buyerMap.values());
+    if (buyers.length === 0) {
+      buyerEl.innerHTML = `<div class="buyer-section-title">🧾 同人得標明細彙整</div><p style="color:#7C6A6D; font-size:13px; margin:0;">目前尚無得標或出價紀錄。</p>`;
+      return;
+    }
+
+    buyerEl.innerHTML = `
+      <div class="buyer-section-title">🧾 同人得標明細彙整（共 ${buyers.length} 位）</div>
+      <div class="buyer-grid">
+        ${buyers.map(b => {
+          const itemLines = b.items.map(it =>
+            `<li>${escapeHtml(it.name)} — <strong>$${it.amount}</strong> ${it.isPaid ? '（已給錢）' : '（未給錢）'}${it.isClaimed ? '（已拿走）' : '（未拿走）'}</li>`
+          ).join('');
+          const payNote = b.allPaid ? '✅ 款項已全數付清' : '💸 尚有未付款項';
+          const claimNote = b.allClaimed ? '🎁 物品已全數領取' : '📦 尚有物品未拿走';
+          return `
+            <div class="buyer-card">
+              <div class="buyer-header">
+                <span>👤 ${escapeHtml(b.name)}</span>
+                <span class="buyer-total">合計 $${b.totalAmount}</span>
+              </div>
+              <ul class="buyer-items">${itemLines}</ul>
+              <div class="buyer-status-note">${payNote}｜${claimNote}</div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   }
@@ -379,13 +496,13 @@
 
   window.togglePaid = function(itemId) {
     const item = allItems[itemId];
-    if (!item) return;
+    if (!item || !hasDealRecord(item)) return;
     update(ref(db, `auction/items/${itemId}`), { isPaid: !Boolean(item.isPaid) });
   };
 
   window.toggleClaimed = function(itemId) {
     const item = allItems[itemId];
-    if (!item) return;
+    if (!item || !hasDealRecord(item)) return;
     update(ref(db, `auction/items/${itemId}`), { isClaimed: !Boolean(item.isClaimed) });
   };
 
@@ -441,6 +558,18 @@
     update(ref(db, `auction/items/${itemId}`), { status: 'sold' });
   };
 
+  window.passItem = function(itemId) {
+    if (!confirm('確定要將此商品設為「流標」嗎？')) return;
+    if (currentActiveId === itemId) {
+      set(ref(db, 'auction/activeItemId'), null);
+    }
+    update(ref(db, `auction/items/${itemId}`), {
+      status: 'passed',
+      isPaid: false,
+      isClaimed: false
+    });
+  };
+
   window.reopenItem = function(itemId) {
     if (!confirm('確定要重新開放此商品競標嗎？')) return;
     update(ref(db, `auction/items/${itemId}`), { status: 'open' });
@@ -483,23 +612,36 @@
       const item = allItems[id];
       const isActive = (id === currentActiveId);
       const isSold = (item.status === 'sold');
+      const isPassed = (item.status === 'passed');
       const isEditing = (id === editingItemId);
+      const showSettlement = hasDealRecord(item);
       const isPaid = Boolean(item.isPaid);
       const isClaimed = Boolean(item.isClaimed);
 
       let statusBadgeHtml = `<span class="badge badge-waiting">待拍賣</span>`;
-      if (isActive && !isSold) statusBadgeHtml = `<span class="badge badge-active">🔥 現場競標中</span>`;
-      if (isSold) statusBadgeHtml = `<span class="badge badge-sold">✅ 已結標</span>`;
+      if (isSold) {
+        statusBadgeHtml = `<span class="badge badge-sold">✅ 已結標</span>`;
+      } else if (isPassed) {
+        statusBadgeHtml = `<span class="badge badge-passed">🏳️ 流標</span>`;
+      } else if (isActive) {
+        statusBadgeHtml = `<span class="badge badge-active">🔥 現場競標中</span>`;
+      }
 
-      const paidBadgeHtml = isPaid
-        ? `<span class="badge badge-paid">💵 已給錢</span>`
-        : `<span class="badge badge-unpaid">💸 還沒給錢</span>`;
+      const paidBadgeHtml = showSettlement
+        ? (isPaid
+            ? `<span class="badge badge-paid">💵 已給錢</span>`
+            : `<span class="badge badge-unpaid">💸 還沒給錢</span>`)
+        : '';
 
-      const claimedBadgeHtml = isClaimed
-        ? `<span class="badge badge-claimed">🎁 已拿走</span>`
-        : `<span class="badge badge-unclaimed">📦 還沒拿走</span>`;
+      const claimedBadgeHtml = showSettlement
+        ? (isClaimed
+            ? `<span class="badge badge-claimed">🎁 已拿走</span>`
+            : `<span class="badge badge-unclaimed">📦 還沒拿走</span>`)
+        : '';
 
-      const displayPrice = item.currentPrice > 0 ? `$${item.currentPrice}` : `尚未出價（底價 $${item.startPrice}）`;
+      const displayPrice = item.currentPrice > 0
+        ? `$${item.currentPrice}`
+        : (isPassed ? `流標（底價 $${item.startPrice}）` : `尚未出價（底價 $${item.startPrice}）`);
       const winnerText = item.highestBidder ? `｜最高出價者：<strong>${escapeHtml(item.highestBidder)}</strong>` : '';
       const buyoutText = item.buyoutPrice ? `｜一口價：<strong>$${item.buyoutPrice}</strong>` : '';
 
@@ -539,8 +681,19 @@
         </div>
       ` : '';
 
+      const settlementBarHtml = showSettlement ? `
+        <div class="settlement-bar">
+          <button class="btn ${isPaid ? 'btn-paid' : 'btn-unpaid'}" onclick="togglePaid('${id}')">
+            ${isPaid ? '✅ 已給錢（點此改為未給）' : '💸 標記已給錢'}
+          </button>
+          <button class="btn ${isClaimed ? 'btn-claimed' : 'btn-unclaimed'}" onclick="toggleClaimed('${id}')">
+            ${isClaimed ? '🎁 已拿走（點此改為未拿）' : '📦 標記已拿走'}
+          </button>
+        </div>
+      ` : '';
+
       const card = document.createElement('div');
-      card.className = `item-card ${isActive ? 'active-item' : ''} ${isSold ? 'sold-item' : ''}`;
+      card.className = `item-card ${isActive ? 'active-item' : ''} ${isSold ? 'sold-item' : ''} ${isPassed ? 'passed-item' : ''}`;
       card.innerHTML = `
         <div class="item-header">
           <div>
@@ -563,17 +716,11 @@
             : `<button class="btn btn-danger" onclick="clearActiveItem()">⏹️ 取消展示</button>`}
           <button class="btn btn-info" onclick="startEditItem('${id}')">✏️ 編輯</button>
           ${!isSold ? `<button class="btn btn-success" onclick="closeItem('${id}')">🔨 立即結標</button>` : `<button class="btn btn-warning" onclick="reopenItem('${id}')">🔄 重新開放</button>`}
+          ${!isPassed && !isSold ? `<button class="btn btn-passed" onclick="passItem('${id}')">🏳️ 流標</button>` : (isPassed ? `<button class="btn btn-warning" onclick="reopenItem('${id}')">🔄 重新開放</button>` : '')}
           <button class="btn btn-warning" onclick="resetBids('${id}')">🧹 清空出價</button>
           <button class="btn btn-danger" onclick="deleteItem('${id}')">🗑️ 刪除</button>
         </div>
-        <div class="settlement-bar">
-          <button class="btn ${isPaid ? 'btn-paid' : 'btn-unpaid'}" onclick="togglePaid('${id}')">
-            ${isPaid ? '✅ 已給錢（點此改為未給）' : '💸 標記已給錢'}
-          </button>
-          <button class="btn ${isClaimed ? 'btn-claimed' : 'btn-unclaimed'}" onclick="toggleClaimed('${id}')">
-            ${isClaimed ? '🎁 已拿走（點此改為未拿）' : '📦 標記已拿走'}
-          </button>
-        </div>
+        ${settlementBarHtml}
         ${editBoxHtml}
         ${bidsHtml}
       `;
